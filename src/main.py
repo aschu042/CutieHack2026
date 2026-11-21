@@ -1,6 +1,6 @@
 import pygame
 import sys
-from settings import WIDTH, HEIGHT, FPS, BG_COLOR, LEVELS
+from settings import WIDTH, HEIGHT, FPS, BG_COLOR, WINNING_BG_COLOR, WINNING_TEXT, WINNING_TEXT_COLOR, LEVELS
 from objects import load_level
 
 # python src/main.py
@@ -11,12 +11,16 @@ from objects import load_level
 
 pygame.init()
 
+FONT = pygame.font.SysFont(None, 36, False, False)
+text_surface = FONT.render(WINNING_TEXT, True, WINNING_TEXT_COLOR)
+text_rect = text_surface.get_rect(center=(WIDTH/2, HEIGHT/2))
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 screen_rect = screen.get_rect()
 clock = pygame.time.Clock()
 
 current_level = 0
 platforms, player, goal = load_level(current_level)
+gameOver = False
 
 running = True
 while running:
@@ -34,16 +38,23 @@ while running:
 
     # Check if player reached the goal
     if goal and player.rect.colliderect(goal.rect):
-        current_level = (current_level + 1) % len(LEVELS)
-        platforms, player, goal = load_level(current_level)
+        if current_level < len(LEVELS) - 1:
+            current_level = (current_level + 1) % len(LEVELS)
+            platforms, player, goal = load_level(current_level)
+        else:
+            screen.fill(WINNING_BG_COLOR)
+            screen.blit(text_surface, text_rect)
+            gameOver = True
+
 
     # Render everything
-    screen.fill(BG_COLOR)
-    for platform in platforms:
-        platform.draw(screen)
-    if goal:
-        goal.draw(screen)
-    player.draw(screen)
+    if not gameOver:
+        screen.fill(BG_COLOR)
+        for platform in platforms:
+            platform.draw(screen)
+        if goal:
+            goal.draw(screen)
+        player.draw(screen)
 
     pygame.display.flip()
 
