@@ -173,16 +173,16 @@ class Player:
         # Apply gravity up to terminal fall speed
         self.vel_y = min(self.vel_y + GRAVITY, MAX_FALL_SPEED)
 
-        # 1. Horizontal movement & collision
+        # Horizontal movement & collision
         self.rect.x += dx
         for platform in platforms:
-            if self.rect.colliderect(platform.rect):
+            if platform.is_solid and self.rect.colliderect(platform.rect):
                 if dx > 0:
                     self.rect.right = platform.rect.left
                 elif dx < 0:
                     self.rect.left = platform.rect.right
 
-        # 2. Vertical movement & collision
+        # Vertical movement & collision
         self.rect.y += self.vel_y
         for platform in platforms:
             if platform.is_solid and self.rect.colliderect(platform.rect):
