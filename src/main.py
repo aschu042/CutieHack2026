@@ -2,6 +2,7 @@ import pygame
 import sys
 from settings import WIDTH, HEIGHT, FPS, BG_COLOR, WINNING_BG_COLOR, WINNING_TEXT, WINNING_TEXT_COLOR, LEVELS
 from objects import load_level
+from minigames import start_minigame
 
 # python src/main.py
 
@@ -30,6 +31,15 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+        # Trigger minigame when pressing 'T' near an NPC
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_t:
+            for npc in npcs:
+                if npc.player_nearby:
+                    won = start_minigame(screen, clock, npc.minigame_id)
+                    if won:
+                        npc.completed = True
+                    break
+
     for platform in platforms:
         platform.update(platforms, screen_rect, player.rect)
 
@@ -38,7 +48,7 @@ while running:
 
     for bullet in bullets:
         bullet.update(platforms, screen_rect)
-        bullets = [b for b in bullets if b.active]
+    bullets = [b for b in bullets if b.active]
 
     # Update player movement and collisions
     player.update(platforms, screen_rect)

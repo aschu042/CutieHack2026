@@ -46,9 +46,9 @@ class Platform:
     def update(self, platforms, screen_rect, player_rect):
         pass
 
-    def draw(self, surface):
+    def draw(self, surface, camera_x=0):
         if self.is_solid:
-            pygame.draw.rect(surface, self.color, self.rect)
+            pygame.draw.rect(surface, self.color, self.rect.move(-camera_x, 0))
 
 class MovingPlatform(Platform):
     def __init__(self, x, y):
@@ -105,16 +105,17 @@ class CrumblingPlatform(Platform):
                 self.state = "idle"
                 self.is_solid = True
 
-    def draw(self, surface):
+    def draw(self, surface, camera_x=0):
+        draw_rect = self.rect.move(-camera_x, 0)
         if self.state == "idle":
-            pygame.draw.rect(surface, self.color, self.rect)
+            pygame.draw.rect(surface, self.color, draw_rect)
         elif self.state == "shaking":
             # Draw with a slight horizontal shake to warn the player
-            shake_rect = self.rect.move(random.randint(-2, 2), 0)
+            shake_rect = draw_rect.move(random.randint(-2, 2), 0)
             pygame.draw.rect(surface, self.color, shake_rect)
         elif self.state == "broken":
             # Faint outline showing where the platform will reappear
-            pygame.draw.rect(surface, self.color, self.rect, 1)
+            pygame.draw.rect(surface, self.color, draw_rect, 1)
 
 class PhasingPlatform(Platform):
     def __init__(self, x, y):
@@ -134,16 +135,17 @@ class PhasingPlatform(Platform):
                 self.is_solid = True
                 self.timer = PHASE_SOLID_TIME
 
-    def draw(self, surface):
+    def draw(self, surface, camera_x=0):
+        draw_rect = self.rect.move(-camera_x, 0)
         if self.is_solid:
             # Flicker during the final 0.5 seconds (30 frames) before vanishing
             if self.timer <= 30 and (self.timer // 4) % 2 == 0:
-                pygame.draw.rect(surface, self.color, self.rect, 2)
+                pygame.draw.rect(surface, self.color, draw_rect, 2)
             else:
-                pygame.draw.rect(surface, self.color, self.rect)
+                pygame.draw.rect(surface, self.color, draw_rect)
         else:
             # Hollow outline while phased out
-            pygame.draw.rect(surface, self.color, self.rect, 2)
+            pygame.draw.rect(surface, self.color, draw_rect, 2)
 
 class Spike:
     def __init__(self, x, y):
@@ -153,8 +155,8 @@ class Spike:
         )
         self.color = SPIKE_COLOR
 
-    def draw(self, surface):
-        pygame.draw.rect(surface, self.color, self.rect)
+    def draw(self, surface, camera_x=0):
+        pygame.draw.rect(surface, self.color, self.rect.move(-camera_x, 0))
 
 class Bullet:
     def __init__(self, x, y, direction):
@@ -177,8 +179,8 @@ class Bullet:
                 self.active = False
                 return
 
-    def draw(self, surface):
-        pygame.draw.rect(surface, self.color, self.rect)
+    def draw(self, surface, camera_x=0):
+        pygame.draw.rect(surface, self.color, self.rect.move(-camera_x, 0))
 
 class BulletShooter(Platform):
     def __init__(self, x, y, direction):
@@ -202,8 +204,8 @@ class Goal:
         self.rect = pygame.Rect(x, y, width, height)
         self.color = GOAL_COLOR
 
-    def draw(self, surface):
-        pygame.draw.rect(surface, self.color, self.rect)
+    def draw(self, surface, camera_x=0):
+        pygame.draw.rect(surface, self.color, self.rect.move(-camera_x, 0))
 
 class NPC:
     def __init__(self, x, y, minigame_id):
@@ -294,19 +296,18 @@ class Player:
 
         self.rect.clamp_ip(screen_rect)
 
-    def draw(self, surface):
-        pygame.draw.rect(surface, self.color, self.rect)
+    def draw(self, surface, camera_x=0):
+        pygame.draw.rect(surface, self.color, self.rect.move(-camera_x, 0))
 
-def load_level(level_index):
+def build_level(grid):
     platforms = []
     spikes = []
     shooters = []
     bullets = []
-    player = Player(0, 0)
     npcs = []
+    player = Player(0, 0)
     goal = None
-
-    grid = LEVELS[level_index]
+    
     for row_idx, row in enumerate(grid):
         for col_idx, cell in enumerate(row):
             x = col_idx * TILE_SIZE
@@ -335,6 +336,9 @@ def load_level(level_index):
                 platforms.append(shooter)
                 shooters.append(shooter)
             elif cell == "N":
-                npcs.append(NPC(x, y + 8, minigame_id = ""))
+                npcs.append(NPC(x, y + 8, minigame_id = "speedrun"))
 
     return platforms, spikes, shooters, bullets, player, goal, npcs
+
+def load_level(level_index):
+    return build_level(LEVELS[level_index])
