@@ -13,10 +13,18 @@ from settings import (
     CRUMBLE_RESPAWN,
     PHASE_SOLID_TIME,
     PHASE_GONE_TIME,
+    SPIKE_HEIGHT,
+    BULLET_WIDTH,
+    BULLET_HEIGHT,
+    BULLET_SPEED,
+    SHOOT_INTERVAL,
     PLATFORM_COLOR,
     MOVING_COLOR,
     CRUMBLE_COLOR,
     PHASE_COLOR,
+    SPIKE_COLOR,
+    SHOOTER_COLOR,
+    BULLET_COLOR,
     PLAYER_COLOR,
     GOAL_COLOR,
     LEVELS,
@@ -134,6 +142,58 @@ class PhasingPlatform(Platform):
             # Hollow outline while phased out
             pygame.draw.rect(surface, self.color, self.rect, 2)
 
+class Spike:
+    def __init__(self, x, y):
+        # Sits on the bottom half of the tile cell
+        self.rect = pygame.Rect(
+            x, y + (TILE_SIZE - SPIKE_HEIGHT), TILE_SIZE, SPIKE_HEIGHT
+        )
+        self.color = SPIKE_COLOR
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.color, self.rect)
+
+class Bullet:
+    def __init__(self, x, y, direction):
+        self.rect = pygame.Rect(x, y, BULLET_WIDTH, BULLET_HEIGHT)
+        self.direction = direction  # -1 for left, 1 for right
+        self.color = BULLET_COLOR
+        self.active = True
+
+    def update(self, platforms, screen_rect):
+        self.rect.x += BULLET_SPEED * self.direction
+
+        # Despawn if bullet leaves the screen
+        if not screen_rect.colliderect(self.rect):
+            self.active = False
+            return
+
+        # Despawn if bullet hits any solid wall or platform
+        for platform in platforms:
+            if platform.is_solid and self.rect.colliderect(platform.rect):
+                self.active = False
+                return
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.color, self.rect)
+
+class BulletShooter(Platform):
+    def __init__(self, x, y, direction):
+        super().__init__(x, y, color=SHOOTER_COLOR)
+        self.direction = direction  # -1 for left, 1 for right
+        self.timer = SHOOT_INTERVAL // 2  # Fires shortly after level loads
+
+    def shoot(self, bullets):
+        self.timer -= 1
+        if self.timer <= 0:
+            self.timer = SHOOT_INTERVAL
+            bullet_y = self.rect.centery - (BULLET_HEIGHT // 2)
+            if self.direction == -1:
+                bullet_x = self.rect.left - BULLET_WIDTH
+            else:
+                bullet_x = self.rect.right
+            bullets.append(Bullet(bullet_x, bullet_y, self.direction))
+
 class Goal:
     def __init__(self, x, y, width=TILE_SIZE, height=TILE_SIZE):
         self.rect = pygame.Rect(x, y, width, height)
@@ -193,11 +253,7 @@ class Player:
                     self.rect.top = platform.rect.bottom
                     self.vel_y = 0
 
-        # Keep player inside the window and reset fall speed if touching the floor
-        if self.rect.bottom >= screen_rect.bottom:
-            self.rect.bottom = screen_rect.bottom
-            self.vel_y = 0
-
+        # Keep player inside the window, reset fall speed if touching the floor
         self.on_ground = self.rect.bottom >=screen_rect.bottom
         self.standing_on = None
         feet_sensor = pygame.Rect(self.rect.x, self.rect.bottom, self.rect.width, 1)
@@ -216,6 +272,9 @@ class Player:
 
 def load_level(level_index):
     platforms = []
+    spikes = []
+    shooters = []
+    bullets = []
     player = Player(0, 0)
     goal = None
 
@@ -237,5 +296,15 @@ def load_level(level_index):
                 player.rect.topleft = (x, y)
             elif cell == "G":
                 goal = Goal(x, y)
+            elif cell == "^":
+                spikes.append(Spike(x, y))
+            elif cell == "L":
+                shooter = BulletShooter(x, y, direction=-1)
+                platforms.append(shooter)
+                shooters.append(shooter)
+            elif cell == "R":
+                shooter = BulletShooter(x, y, direction=1)
+                platforms.append(shooter)
+                shooters.append(shooter)
 
-    return platforms, player, goal
+    return platforms, spikes, shooters, bullets, player, goal

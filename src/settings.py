@@ -19,12 +19,22 @@ CRUMBLE_RESPAWN = 180            # 3 seconds before returning
 PHASE_SOLID_TIME = 150           # 2.5 seconds solid
 PHASE_GONE_TIME = 120
 
+# Obstacle Settings
+SPIKE_HEIGHT = TILE_SIZE // 2
+BULLET_WIDTH = 16
+BULLET_HEIGHT = 8
+BULLET_SPEED = 6
+SHOOT_INTERVAL = 120
+
 # Colors (R, G, B)
 BG_COLOR = (0, 0, 0)
 PLATFORM_COLOR = (150, 150, 150)
-MOVING_COLOR = (70, 130, 230)    # Blue
-CRUMBLE_COLOR = (210, 120, 60)   # Orange-brown
-PHASE_COLOR = (180, 80, 220)     # Purple
+MOVING_COLOR = (70, 130, 230)
+CRUMBLE_COLOR = (210, 120, 60)
+PHASE_COLOR = (180, 80, 220)
+SPIKE_COLOR = (220, 40, 40)
+SHOOTER_COLOR = (130, 30, 30)
+BULLET_COLOR = (255, 90, 90)
 PLAYER_COLOR = (0, 255, 0)
 GOAL_COLOR = (255, 215, 0)
 
@@ -33,25 +43,28 @@ WINNING_BG_COLOR = (100, 100, 100)
 WINNING_TEXT = "YOU WIN!"
 WINNING_TEXT_COLOR = (200, 200, 200)
 
-# Premade Levels (P = Player, # = Normal Platform, M = Moving Platform, C = Crumbling Platform, F = Phasing Platform, G = Goal)
+# Premade Levels:
+# # = Solid, M = Moving, C = Crumbling, F = Phasing
+# ^ = Spike, L = Left-shooting turret, R = Right-shooting turret
+# P = Player spawn, G = Goal
 LEVELS = [
     # Level 1
     [
         "....................",
         "....................",
-        ".................P..",
+        ".R...............P..",
         "...............#####",
-        "....................",
+        "..................L.",
         "...........M........",
         "................CC..",
         "....#####...........",
         "....................",
         "..........FFF.......",
-        "....................",
+        "................^^..",
         "..G...........#####.",
         "#####...............",
         "....................",
-        "CCCCCCCCCCCCCCCCCCCC",
+        "CCCCCCCC.....CCCCCCC",
     ],
     # Level 2
     [
