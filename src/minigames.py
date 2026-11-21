@@ -15,9 +15,12 @@ from settings import (
 )
 from objects import build_level
 
+pygame.init()
+
 def start_minigame(screen, clock, minigame_id):
     minigames = {
         "speedrun": run_speedrun,
+        "minesweeper": run_minesweeper,
     }
 
     game_fn = minigames.get(minigame_id)
@@ -97,3 +100,134 @@ def run_speedrun(screen, clock):
             pygame.draw.rect(screen, GOAL_COLOR, (150, 34, int(500 * dist_ratio), 6))
 
         pygame.display.flip()
+
+def run_minesweeper(screen, clock):
+    """Runs the Minesweeper clone and returns True on win, False on loss/exit."""
+    MineLocations = [
+        "0141000000",
+        "0112110011",
+        "1101410014",
+        "4322110011",
+        "2442110000",
+        "1233410000",
+        "1114221100",
+        "4111114100",
+    ]
+
+    tileSize = 80
+    rows = len(MineLocations)
+    cols = len(MineLocations[0])
+    width, height = cols * tileSize, rows * tileSize
+
+    GRID_LINE_COLOR = (60, 60, 60)
+    TILE_COLORS = {
+        0: (0, 255, 0),   # Cleared
+        5: (50, 50, 50),  # Untouched
+        6: (255, 0, 0),   # Flag
+    }
+
+    # Resize window to fit the 800x640 board cleanly
+    screen = pygame.display.set_mode((width, height))
+
+    def load_tile(filename):
+        img = pygame.image.load(filename).convert_alpha()
+        if filename == "sprites/Cat.png":
+            return pygame.transform.scale(img, (tileSize + 37, tileSize + 37))
+        return pygame.transform.scale(img, (tileSize, tileSize))
+
+    TILE_IMAGES = {
+        0: load_tile("sprites/Minesweeper0.png"),
+        1: load_tile("sprites/Minesweeper1.png"),
+        2: load_tile("sprites/Minesweeper2.png"),
+        3: load_tile("sprites/Minesweeper3.png"),
+        4: load_tile("sprites/Cat.png"),
+    }
+
+    solution_grid = [[int(char) for char in row] for row in MineLocations]
+    revealed = [[False for _ in range(cols)] for _ in range(rows)]
+    flagged = [[False for _ in range(cols)] for _ in range(rows)]
+
+    result = None  # None while playing, True on win, False on loss
+
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                pygame.display.set_mode((WIDTH, HEIGHT))
+                return False
+
+            if event.type == pygame.MOUSEBUTTONDOWN and result is None:
+                mouse_x, mouse_y = event.pos
+                col = mouse_x // tileSize
+                row = mouse_y // tileSize
+                revealed[row][col] = True
+                if event.button == 1 and not flagged[row][col]:
+                    revealed[row][col] = True
+                    # Check if a cat/mine (4) was uncovered
+                    if solution_grid[row][col] == 4:
+                        result = False
+                elif event.button == 3:
+                    flagged[row][col] = not flagged[row][col]
+                    if not flagged[row][col]:
+                        revealed[row][col] = False
+
+                # Check if every safe (non-4) tile has been revealed
+                if result is None:
+                    all_safe_cleared = all(
+                        revealed[r][c]
+                        for r in range(rows)
+                        for c in range(cols)
+                        if solution_grid[r][c] != 4
+                    )
+                    if all_safe_cleared:
+                        result = True
+
+        # Pass 1: Draw base rectangles and grid lines
+        for row in range(rows):
+            for col in range(cols):
+                rect = pygame.Rect(
+                    col * tileSize,
+                    row * tileSize,
+                    tileSize,
+                    tileSize,
+                )
+
+                if flagged[row][col]:
+                    color = TILE_COLORS[6]
+                elif not revealed[row][col]:
+                    color = 5
+                else:
+                    tile_type = solution_grid[row][col]
+                    color = TILE_COLORS.get(tile_type, TILE_COLORS[0])
+
+                pygame.draw.rect(screen, color, rect)
+                pygame.draw.rect(screen, GRID_LINE_COLOR, rect, 1)
+
+        # Pass 2: Draw centered images
+        for row in range(rows):
+            for col in range(cols):
+                if revealed[row][col] and not flagged[row][col]:
+                    tile_type = solution_grid[row][col]
+                    if tile_type in TILE_IMAGES:
+                        tile_rect = pygame.Rect(
+                            col * tileSize,
+                            row * tileSize,
+                            tileSize,
+                            tileSize,
+                        )
+                        img = TILE_IMAGES[tile_type]
+                        img_rect = img.get_rect(center=tile_rect.center)
+                        screen.blit(img, img_rect)
+
+        pygame.display.flip()
+        clock.tick(FPS)
+
+        # Pause briefly on win/loss so the player sees the final click, then return
+        if result is not None:
+            pygame.time.delay(800)
+            pygame.display.set_mode((WIDTH, HEIGHT))
+            return result
+
