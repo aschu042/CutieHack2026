@@ -2,6 +2,7 @@ import pygame
 import sys
 from settings import WIDTH, HEIGHT, FPS, BG_COLOR, WINNING_BG_COLOR, WINNING_TEXT, WINNING_TEXT_COLOR, LEVELS
 from objects import load_level
+from minigames import start_minigame
 
 # python src/main.py
 
@@ -19,7 +20,7 @@ screen_rect = screen.get_rect()
 clock = pygame.time.Clock()
 
 current_level = 0
-platforms, spikes, shooters, bullets, player, goal = load_level(current_level)
+platforms, spikes, shooters, bullets, player, goal, npcs = load_level(current_level)
 gameOver = False
 
 running = True
@@ -29,6 +30,15 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+
+        # Trigger minigame when pressing 'T' near an NPC
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_t:
+            for npc in npcs:
+                if npc.player_nearby:
+                    won = start_minigame(screen, clock, npc.minigame_id)
+                    if won:
+                        npc.completed = True
+                    break
 
     for platform in platforms:
         platform.update(platforms, screen_rect, player.rect)
@@ -43,6 +53,9 @@ while running:
     # Update player movement and collisions
     player.update(platforms, screen_rect)
 
+    for npc in npcs:
+        npc.update(player.rect)
+
     # Check all death conditions (Void, Spikes, or Bullets)
     died = player.rect.bottom >= screen_rect.bottom
     if not died:
@@ -51,14 +64,14 @@ while running:
         died = any(player.rect.colliderect(bullet.rect) for bullet in bullets)
 
     if died:
-        platforms, spikes, shooters, bullets, player, goal = load_level(current_level)
+        platforms, spikes, shooters, bullets, player, goal, npcs = load_level(current_level)
         continue
 
     # Check if player reached the goal
     if goal and player.rect.colliderect(goal.rect):
         if current_level < len(LEVELS) - 1:
             current_level = (current_level + 1) % len(LEVELS)
-            platforms, spikes, shooters, bullets, player, goal = load_level(current_level)
+            platforms, spikes, shooters, bullets, player, goal, npcs = load_level(current_level)
         else:
             screen.fill(WINNING_BG_COLOR)
             screen.blit(text_surface, text_rect)
@@ -76,6 +89,8 @@ while running:
             bullet.draw(screen)
         if goal:
             goal.draw(screen)
+        for npc in npcs:
+            npc.draw(screen)
         player.draw(screen)
 
     pygame.display.flip()
