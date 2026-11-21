@@ -19,7 +19,7 @@ screen_rect = screen.get_rect()
 clock = pygame.time.Clock()
 
 current_level = 0
-platforms, spikes, shooters, bullets, player, goal = load_level(current_level)
+platforms, spikes, shooters, bullets, player, goal, npc = load_level(current_level)
 gameOver = False
 
 running = True
@@ -38,7 +38,7 @@ while running:
 
     for bullet in bullets:
         bullet.update(platforms, screen_rect)
-    bullets = [b for b in bullets if b.active]
+        bullets = [b for b in bullets if b.active]
 
     # Update player movement and collisions
     player.update(platforms, screen_rect)
@@ -51,14 +51,14 @@ while running:
         died = any(player.rect.colliderect(bullet.rect) for bullet in bullets)
 
     if died:
-        platforms, spikes, shooters, bullets, player, goal = load_level(current_level)
+        platforms, spikes, shooters, bullets, player, goal, npc = load_level(current_level)
         continue
 
     # Check if player reached the goal
     if goal and player.rect.colliderect(goal.rect):
         if current_level < len(LEVELS) - 1:
             current_level = (current_level + 1) % len(LEVELS)
-            platforms, spikes, shooters, bullets, player, goal = load_level(current_level)
+            platforms, spikes, shooters, bullets, player, goal, npc = load_level(current_level)
         else:
             screen.fill(WINNING_BG_COLOR)
             screen.blit(text_surface, text_rect)
@@ -77,6 +77,7 @@ while running:
         if goal:
             goal.draw(screen)
         player.draw(screen)
+        npc.draw(screen)
 
     pygame.display.flip()
 

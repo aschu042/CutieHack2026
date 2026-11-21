@@ -37,6 +37,7 @@ SHOOTER_COLOR = (130, 30, 30)
 BULLET_COLOR = (255, 90, 90)
 PLAYER_COLOR = (0, 255, 0)
 GOAL_COLOR = (255, 215, 0)
+NPC_COLOR = (255, 0, 255)
 
 # Winning Screen
 WINNING_BG_COLOR = (100, 100, 100)
@@ -46,7 +47,7 @@ WINNING_TEXT_COLOR = (200, 200, 200)
 # Premade Levels:
 # # = Solid, M = Moving, C = Crumbling, F = Phasing
 # ^ = Spike, L = Left-shooting turret, R = Right-shooting turret
-# P = Player spawn, G = Goal
+# P = Player spawn, G = Goal, N = NPC
 LEVELS = [
     # Level 1
     [
@@ -56,7 +57,7 @@ LEVELS = [
         "...............#####",
         "..................L.",
         "...........M........",
-        "................CC..",
+        "......N.........CC..",
         "....#####...........",
         "....................",
         "..........FFF.......",

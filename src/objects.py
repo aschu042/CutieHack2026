@@ -27,6 +27,7 @@ from settings import (
     BULLET_COLOR,
     PLAYER_COLOR,
     GOAL_COLOR,
+    NPC_COLOR,
     LEVELS,
 )
 
@@ -202,6 +203,13 @@ class Goal:
     def draw(self, surface):
         pygame.draw.rect(surface, self.color, self.rect)
 
+class NPC:
+    def __init__(self, x, y):
+        self.rect = pygame.Rect(x, y, PLAYER_SIZE, PLAYER_SIZE)
+        self.color = NPC_COLOR
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.color, self.rect)
 class Player:
     def __init__(self, x, y):
         self.rect = pygame.Rect(x, y, PLAYER_SIZE, PLAYER_SIZE)
@@ -276,6 +284,7 @@ def load_level(level_index):
     shooters = []
     bullets = []
     player = Player(0, 0)
+    npc = NPC(0,0)
     goal = None
 
     grid = LEVELS[level_index]
@@ -306,5 +315,7 @@ def load_level(level_index):
                 shooter = BulletShooter(x, y, direction=1)
                 platforms.append(shooter)
                 shooters.append(shooter)
+            elif cell == "N":
+                npc.rect.topleft = (x,y + 8)
 
-    return platforms, spikes, shooters, bullets, player, goal
+    return platforms, spikes, shooters, bullets, player, goal, npc
