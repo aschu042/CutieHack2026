@@ -1,8 +1,18 @@
 import pygame
 import sys
-from settings import WIDTH, HEIGHT, FPS, BG_COLOR, WINNING_BG_COLOR, WINNING_TEXT, WINNING_TEXT_COLOR, LEVELS
+from settings import WIDTH, HEIGHT, FPS, BG_COLOR, WINNING_BG_COLOR, WINNING_TEXT, WINNING_TEXT_COLOR, LEVELS, WINNING_TEXT_TRUE
 from objects import load_level
 from minigames import start_minigame
+
+def draw_multiline_text(surface, text, pos, font, color):
+    lines = text.splitlines()
+    x, y = pos
+    line_height = font.get_linesize()  # Gets the recommended height for a line
+
+    for line in lines:
+        line_surface = font.render(line, True, color)
+        surface.blit(line_surface, (x - len(line), y))
+        y += line_height  # Move down for the next line
 
 # python src/main.py
 
@@ -13,8 +23,6 @@ from minigames import start_minigame
 pygame.init()
 
 FONT = pygame.font.SysFont(None, 36, False, False)
-text_surface = FONT.render(WINNING_TEXT, True, WINNING_TEXT_COLOR)
-text_rect = text_surface.get_rect(center=(WIDTH/2, HEIGHT/2))
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 screen_rect = screen.get_rect()
 clock = pygame.time.Clock()
@@ -22,6 +30,7 @@ clock = pygame.time.Clock()
 current_level = 0
 platforms, spikes, shooters, bullets, player, goal, npcs = load_level(current_level)
 gameOver = False
+miniCount = 0
 
 running = True
 while running:
@@ -38,6 +47,7 @@ while running:
                     won = start_minigame(screen, clock, npc.minigame_id)
                     if won:
                         npc.completed = True
+                        miniCount += 1
                     break
 
     for platform in platforms:
@@ -74,8 +84,12 @@ while running:
             platforms, spikes, shooters, bullets, player, goal, npcs = load_level(current_level)
         else:
             screen.fill(WINNING_BG_COLOR)
-            screen.blit(text_surface, text_rect)
             gameOver = True
+            if miniCount < len(npcs) + 1:
+                draw_multiline_text(screen, WINNING_TEXT, (2 * len(WINNING_TEXT), HEIGHT//2), FONT, WINNING_TEXT_COLOR)
+            else:
+                draw_multiline_text(screen, WINNING_TEXT_TRUE, (2 * len(WINNING_TEXT), HEIGHT//2), FONT, WINNING_TEXT_COLOR)
+            
 
 
     # Render everything

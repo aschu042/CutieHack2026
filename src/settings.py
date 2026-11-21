@@ -46,7 +46,8 @@ SPEEDRUN_TIME = 780
 
 # Winning Screen
 WINNING_BG_COLOR = (100, 100, 100)
-WINNING_TEXT = "YOU WIN!"
+WINNING_TEXT = "You Win? Yet you can't seem to wake.\nPerhaps there is more to this dream than you think"
+WINNING_TEXT_TRUE = "YOU WIN!\nAnd with your win you also start to wake.\nDreams truly are a mystery"
 WINNING_TEXT_COLOR = (200, 200, 200)
 
 # Premade Levels:
