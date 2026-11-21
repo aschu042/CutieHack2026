@@ -28,6 +28,11 @@ PHASE_COLOR = (180, 80, 220)     # Purple
 PLAYER_COLOR = (0, 255, 0)
 GOAL_COLOR = (255, 215, 0)
 
+# Winning Screen
+WINNING_BG_COLOR = (100, 100, 100)
+WINNING_TEXT = "YOU WIN!"
+WINNING_TEXT_COLOR = (200, 200, 200)
+
 # Premade Levels (P = Player, # = Normal Platform, M = Moving Platform, C = Crumbling Platform, F = Phasing Platform, G = Goal)
 LEVELS = [
     # Level 1
