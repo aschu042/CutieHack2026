@@ -26,6 +26,9 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+    for platform in platforms:
+        platform.update(platforms, screen_rect, player.rect)
+
     # Update player movement and collisions
     player.update(platforms, screen_rect)
 
