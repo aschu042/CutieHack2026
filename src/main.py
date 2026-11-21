@@ -1,5 +1,7 @@
 import pygame
 import sys
+from settings import WIDTH, HEIGHT, FPS, BG_COLOR, LEVELS
+from objects import load_level
 
 # python src/main.py
 
@@ -9,31 +11,38 @@ import sys
 
 pygame.init()
 
-WIDTH, HEIGHT = 800, 600
-screen = pygame.display.set_mode((WIDTH, HEIGHT))  # makes the screen
-clock = pygame.time.Clock()  # sets the timing
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+screen_rect = screen.get_rect()
+clock = pygame.time.Clock()
 
-player = pygame.Rect(100, 100, 50, 50)  # makes a rectangle to be put on the screen
-
-speed = 5
+current_level = 0
+platforms, player, goal = load_level(current_level)
 
 running = True
 while running:
-    clock.tick(60)  #60 fps
+    clock.tick(FPS)
 
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:  # checks if game window has been closed, if it has been stop running
+        if event.type == pygame.QUIT:
             running = False
 
-    keys = pygame.key.get_pressed()  # gets input from keybaord
-    if keys[pygame.K_w]: player.y -= speed
-    if keys[pygame.K_s]: player.y += speed
-    if keys[pygame.K_a]: player.x -= speed
-    if keys[pygame.K_d]: player.x += speed
+    # Update player movement and collisions
+    player.update(platforms, screen_rect)
 
-    screen.fill((0, 0, 0))  # clears the screen
-    pygame.draw.rect(screen, (0, 255, 0), player)  # brings back the player and enemies
-    pygame.display.flip()  # updates the screen as needed
+    # Check if player reached the goal
+    if goal and player.rect.colliderect(goal.rect):
+        current_level = (current_level + 1) % len(LEVELS)
+        platforms, player, goal = load_level(current_level)
+
+    # Render everything
+    screen.fill(BG_COLOR)
+    for platform in platforms:
+        platform.draw(screen)
+    if goal:
+        goal.draw(screen)
+    player.draw(screen)
+
+    pygame.display.flip()
 
 pygame.quit()  # closes the game
 sys.exit()     # closes the program
