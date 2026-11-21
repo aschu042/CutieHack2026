@@ -28,6 +28,8 @@ from settings import (
     PLAYER_COLOR,
     GOAL_COLOR,
     NPC_COLOR,
+    NPC_COMPLETED_COLOR,
+    INTERACT_PADDING,
     LEVELS,
 )
 
@@ -204,12 +206,29 @@ class Goal:
         pygame.draw.rect(surface, self.color, self.rect)
 
 class NPC:
-    def __init__(self, x, y):
+    def __init__(self, x, y, minigame_id):
         self.rect = pygame.Rect(x, y, PLAYER_SIZE, PLAYER_SIZE)
+        # Slightly larger invisible box so you don't have to pixel-perfect overlap
+        self.interact_rect = self.rect.inflate(INTERACT_PADDING, INTERACT_PADDING)
         self.color = NPC_COLOR
+        self.minigame_id = minigame_id
+        self.player_nearby = False
+        self.completed = False
+
+    def update(self, player_rect):
+        self.player_nearby = self.interact_rect.colliderect(player_rect)
 
     def draw(self, surface):
-        pygame.draw.rect(surface, self.color, self.rect)
+        color = NPC_COMPLETED_COLOR if self.completed else self.color
+        pygame.draw.rect(surface, color, self.rect)
+
+        # Show a visual cue when the player is close enough to press 'T'
+        if self.player_nearby:
+            pygame.draw.rect(surface, (255, 255, 255), self.rect, 2)
+            prompt_box = pygame.Rect(self.rect.centerx - 5, self.rect.top - 14, 10, 10)
+            pygame.draw.rect(surface, (255, 255, 255), prompt_box)
+
+    
 class Player:
     def __init__(self, x, y):
         self.rect = pygame.Rect(x, y, PLAYER_SIZE, PLAYER_SIZE)
@@ -284,7 +303,7 @@ def load_level(level_index):
     shooters = []
     bullets = []
     player = Player(0, 0)
-    npc = NPC(0,0)
+    npcs = []
     goal = None
 
     grid = LEVELS[level_index]
@@ -316,6 +335,6 @@ def load_level(level_index):
                 platforms.append(shooter)
                 shooters.append(shooter)
             elif cell == "N":
-                npc.rect.topleft = (x,y + 8)
+                npcs.append(NPC(x, y + 8, minigame_id = ""))
 
-    return platforms, spikes, shooters, bullets, player, goal, npc
+    return platforms, spikes, shooters, bullets, player, goal, npcs
