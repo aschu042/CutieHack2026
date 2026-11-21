@@ -335,8 +335,10 @@ def build_level(grid):
                 shooter = BulletShooter(x, y, direction=1)
                 platforms.append(shooter)
                 shooters.append(shooter)
-            elif cell == "N":
+            elif cell == "1":
                 npcs.append(NPC(x, y + 8, minigame_id = "speedrun"))
+            elif cell == "2":
+                npcs.append(NPC(x, y + 8, minigame_id = "minesweeper"))
 
     return platforms, spikes, shooters, bullets, player, goal, npcs
 
