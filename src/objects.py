@@ -3,6 +3,9 @@ from settings import (
     TILE_SIZE,
     PLAYER_SIZE,
     PLAYER_SPEED,
+    GRAVITY,
+    JUMP_STRENGTH,
+    MAX_FALL_SPEED,
     PLATFORM_COLOR,
     PLAYER_COLOR,
     GOAL_COLOR,
@@ -30,22 +33,28 @@ class Player:
         self.rect = pygame.Rect(x, y, PLAYER_SIZE, PLAYER_SIZE)
         self.color = PLAYER_COLOR
         self.speed = PLAYER_SPEED
+        self.vel_y = 0
+        self.on_ground = False
 
     def update(self, platforms, screen_rect):
         keys = pygame.key.get_pressed()
         dx = 0
-        dy = 0
 
+        # Horizontal input
         if keys[pygame.K_a]:
             dx -= self.speed
         if keys[pygame.K_d]:
             dx += self.speed
-        if keys[pygame.K_w]:
-            dy -= self.speed
-        if keys[pygame.K_s]:
-            dy += self.speed
 
-        # Horizontal movement & collision
+        # Jump input (only allowed when standing on a surface)
+        if (keys[pygame.K_w] or keys[pygame.K_SPACE]) and self.on_ground:
+            self.vel_y = JUMP_STRENGTH
+            self.on_ground = False
+
+        # Apply gravity up to terminal fall speed
+        self.vel_y = min(self.vel_y + GRAVITY, MAX_FALL_SPEED)
+
+        # 1. Horizontal movement & collision
         self.rect.x += dx
         for platform in platforms:
             if self.rect.colliderect(platform.rect):
@@ -54,16 +63,26 @@ class Player:
                 elif dx < 0:
                     self.rect.left = platform.rect.right
 
-        # Vertical movement & collision
-        self.rect.y += dy
+        # 2. Vertical movement & collision
+        self.rect.y += self.vel_y
+        self.on_ground = False
+
         for platform in platforms:
             if self.rect.colliderect(platform.rect):
-                if dy > 0:
+                if self.vel_y > 0:  # Falling -> land on top of platform
                     self.rect.bottom = platform.rect.top
-                elif dy < 0:
+                    self.vel_y = 0
+                    self.on_ground = True
+                elif self.vel_y < 0:  # Jumping -> bonk head on bottom of platform
                     self.rect.top = platform.rect.bottom
+                    self.vel_y = 0
 
-        # Keep player inside the window
+        # Keep player inside the window and reset fall speed if touching the floor
+        if self.rect.bottom >= screen_rect.bottom:
+            self.rect.bottom = screen_rect.bottom
+            self.vel_y = 0
+            self.on_ground = True
+
         self.rect.clamp_ip(screen_rect)
 
     def draw(self, surface):
