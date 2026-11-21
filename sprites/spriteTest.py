@@ -14,7 +14,7 @@ class Player(pygame.sprite.Sprite):
         super().__init__()
         
         # Option A: Load an external image (with transparency)
-        self.image = pygame.image.load("images/Rabbit.png").convert_alpha()
+        self.image = pygame.image.load("sprites/Rabbit.png").convert_alpha()
         ## for the card self.image = pygame.transform.scale(self.image, (100, 100))
         
         # Set the position using its rectangle
