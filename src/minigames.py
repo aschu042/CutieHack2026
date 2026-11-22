@@ -153,6 +153,16 @@ def run_minesweeper(screen, clock):
     revealed = [[False for _ in range(cols)] for _ in range(rows)]
     flagged = [[False for _ in range(cols)] for _ in range(rows)]
 
+    # Reveal 12 random safe (non-cat) tiles at the start
+    safe_tiles = [
+        (r, c)
+        for r in range(rows)
+        for c in range(cols)
+        if solution_grid[r][c] != 4
+    ]
+    for r, c in random.sample(safe_tiles, min(12, len(safe_tiles))):
+        revealed[r][c] = True
+
     result = None  # None while playing, True on win, False on loss
 
     while True:
