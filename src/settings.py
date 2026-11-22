@@ -35,6 +35,12 @@ PLAYER_SPRITE = "sprites/Alice2.png"
 PLAYER_SPRITE_SCALE = 1.25
 PLAYER_OFFSET_X = 0
 PLAYER_OFFSET_Y = 0
+NPC_SPRITES = {
+    "speedrun": "sprites/Rabbit.png",
+    "minesweeper": "sprites/CatWorld.png",
+    "teapot": "sprites/MadHatter.png",
+    "queen": "sprites/Heart.png",
+}
 
 # Colors (R, G, B)
 BG_COLOR = (127, 127, 127)
