@@ -370,15 +370,33 @@ def run_teapot(screen, clock):
             pygame.display.set_mode((WIDTH, HEIGHT))
             return result
 
-
 def run_queen(screen, clock):
     width, height = 800, 600
     screen = pygame.display.set_mode((width, height))
     font = pygame.font.SysFont(None, 23)
     big_font = pygame.font.SysFont(None, 48)
 
-    player = pygame.Rect(375, 500, 50, 50)
-    queen = pygame.Rect(275, 50, 250, 250)
+    player_img = pygame.image.load("sprites/Alice2.png").convert_alpha()
+    player_img = pygame.transform.scale(player_img, (250, 250))
+    player_rect = player_img.get_rect(center=(width // 2, 525))
+
+    queen_img = pygame.image.load("sprites/Queen.png").convert_alpha()
+    queen_img = pygame.transform.scale(queen_img, (250, 250))
+    queen_rect = queen_img.get_rect(center=(width // 2, 175))
+
+    # Background sections and red rose squares in the garden
+    top_half = pygame.Rect(0, 0, width, height // 2)
+    bottom_half = pygame.Rect(0, height // 2, width, height // 2)
+    roses = [
+        pygame.Rect(60, 60, 24, 24),
+        pygame.Rect(140, 180, 24, 24),
+        pygame.Rect(90, 240, 24, 24),
+        pygame.Rect(210, 90, 24, 24),
+        pygame.Rect(580, 70, 24, 24),
+        pygame.Rect(690, 130, 24, 24),
+        pygame.Rect(620, 220, 24, 24),
+        pygame.Rect(730, 250, 24, 24),
+    ]
 
     dialogue = {
         "start": {
@@ -464,9 +482,14 @@ def run_queen(screen, clock):
                             result = current_node == "resolute"
                         break
 
-        screen.fill((255, 255, 255))
-        pygame.draw.rect(screen, (0, 255, 0), player)
-        pygame.draw.rect(screen, (0, 255, 0), queen)
+        # Draw garden background (top green + red roses, bottom brown)
+        pygame.draw.rect(screen, (34, 139, 34), top_half)
+        pygame.draw.rect(screen, (139, 90, 43), bottom_half)
+        for rose in roses:
+            pygame.draw.rect(screen, (220, 20, 60), rose)
+
+        screen.blit(player_img, player_rect)
+        screen.blit(queen_img, queen_rect)
 
         # 1. Draw the Queen's speech box and text
         queen_box = pygame.Rect(30, 310, 740, 46)
@@ -487,9 +510,9 @@ def run_queen(screen, clock):
                 screen.blit(btn_text, btn_text.get_rect(center=btn_rect.center))
         else:
             if result:
-                end_surface = big_font.render("YOU SURVIVED!", True, (0, 160, 0))
+                end_surface = big_font.render("YOU SURVIVED!", True, (0, 220, 0))
             else:
-                end_surface = big_font.render("GAME OVER", True, (200, 0, 0))
+                end_surface = big_font.render("GAME OVER", True, (255, 60, 60))
             screen.blit(end_surface, end_surface.get_rect(center=(width // 2, 410)))
 
         pygame.display.flip()
