@@ -30,8 +30,79 @@ from settings import (
     NPC_COLOR,
     NPC_COMPLETED_COLOR,
     INTERACT_PADDING,
+    PLATFORM_SPRITE,
+    SPIKE_SPRITE,
+    CANNON_SPRITE,
+    PLAYER_SPRITE,
+    PLAYER_SPRITE_SCALE,
+    PLAYER_OFFSET_X,
+    PLAYER_OFFSET_Y,
     LEVELS,
 )
+
+_platform_tile_cache = None
+_spike_sprite_cache = None
+_cannon_sprite_cache = {}
+_player_sprite_cache = {}
+
+def get_platform_tile():
+    global _platform_tile_cache
+    if _platform_tile_cache is None:
+        img = pygame.image.load(PLATFORM_SPRITE).convert_alpha()
+        scaled_size = int(TILE_SIZE * 1.3)
+        _platform_tile_cache = pygame.transform.scale(img, (scaled_size, scaled_size))
+    return _platform_tile_cache
+
+def get_spike_sprite():
+    global _spike_sprite_cache
+    if _spike_sprite_cache is None:
+        img = pygame.image.load(SPIKE_SPRITE).convert_alpha()
+        scaled_size = int(TILE_SIZE * 2)
+        _spike_sprite_cache = pygame.transform.scale(img, (scaled_size, scaled_size))
+    return _spike_sprite_cache
+
+def get_cannon_tile(direction):
+    if not _cannon_sprite_cache:
+        img = pygame.image.load(CANNON_SPRITE)
+        if pygame.display.get_surface():
+            img = img.convert_alpha()
+
+        # Trim empty transparent margins so the turret fills the tile cleanly
+        content_rect = img.get_bounding_rect()
+        if content_rect.width > 0 and content_rect.height > 0:
+            img = img.subsurface(content_rect)
+
+        right_sprite = pygame.transform.scale(img, (TILE_SIZE, TILE_SIZE))
+        left_sprite = pygame.transform.flip(right_sprite, True, False)
+
+        _cannon_sprite_cache[1] = right_sprite
+        _cannon_sprite_cache[-1] = left_sprite
+
+    return _cannon_sprite_cache[direction]
+
+def get_player_sprite(facing):
+    if not _player_sprite_cache:
+        img = pygame.image.load(PLAYER_SPRITE)
+        if pygame.display.get_surface():
+            img = img.convert_alpha()
+
+        # Trim empty transparent borders around the artwork
+        content_rect = img.get_bounding_rect()
+        if content_rect.width > 0 and content_rect.height > 0:
+            img = img.subsurface(content_rect)
+
+        # Scale height by PLAYER_SPRITE_SCALE while preserving the image's aspect ratio
+        target_height = max(1, int(PLAYER_SIZE * PLAYER_SPRITE_SCALE))
+        aspect_ratio = img.get_width() / img.get_height()
+        target_width = max(1, int(target_height * aspect_ratio))
+
+        right_sprite = pygame.transform.scale(img, (target_width, target_height))
+        left_sprite = pygame.transform.flip(right_sprite, True, False)
+
+        _player_sprite_cache[1] = right_sprite
+        _player_sprite_cache[-1] = left_sprite
+
+    return _player_sprite_cache[facing]
 
 class Platform:
     def __init__(self, x, y, width=TILE_SIZE, height=TILE_SIZE, color=PLATFORM_COLOR):
@@ -46,9 +117,19 @@ class Platform:
     def update(self, platforms, screen_rect, player_rect):
         pass
 
+    def draw_tiled_sprite(self, surface, draw_rect):
+        tile_img = get_platform_tile()
+        for offset_x in range(0, draw_rect.width, TILE_SIZE):
+            cell_center = (
+                draw_rect.x + offset_x + TILE_SIZE // 2,
+                draw_rect.y + TILE_SIZE // 2,
+            )
+            img_rect = tile_img.get_rect(center=cell_center)
+            surface.blit(tile_img, img_rect)
+
     def draw(self, surface, camera_x=0):
         if self.is_solid:
-            pygame.draw.rect(surface, self.color, self.rect.move(-camera_x, 0))
+            self.draw_tiled_sprite(surface, self.rect.move(-camera_x, 0))
 
 class MovingPlatform(Platform):
     def __init__(self, x, y):
@@ -108,13 +189,11 @@ class CrumblingPlatform(Platform):
     def draw(self, surface, camera_x=0):
         draw_rect = self.rect.move(-camera_x, 0)
         if self.state == "idle":
-            pygame.draw.rect(surface, self.color, draw_rect)
+            self.draw_tiled_sprite(surface, draw_rect)
         elif self.state == "shaking":
-            # Draw with a slight horizontal shake to warn the player
             shake_rect = draw_rect.move(random.randint(-2, 2), 0)
-            pygame.draw.rect(surface, self.color, shake_rect)
+            self.draw_tiled_sprite(surface, shake_rect)
         elif self.state == "broken":
-            # Faint outline showing where the platform will reappear
             pygame.draw.rect(surface, self.color, draw_rect, 1)
 
 class PhasingPlatform(Platform):
@@ -138,25 +217,24 @@ class PhasingPlatform(Platform):
     def draw(self, surface, camera_x=0):
         draw_rect = self.rect.move(-camera_x, 0)
         if self.is_solid:
-            # Flicker during the final 0.5 seconds (30 frames) before vanishing
             if self.timer <= 30 and (self.timer // 4) % 2 == 0:
                 pygame.draw.rect(surface, self.color, draw_rect, 2)
             else:
-                pygame.draw.rect(surface, self.color, draw_rect)
+                self.draw_tiled_sprite(surface, draw_rect)
         else:
-            # Hollow outline while phased out
             pygame.draw.rect(surface, self.color, draw_rect, 2)
 
 class Spike:
     def __init__(self, x, y):
-        # Sits on the bottom half of the tile cell
-        self.rect = pygame.Rect(
-            x, y + (TILE_SIZE - SPIKE_HEIGHT), TILE_SIZE, SPIKE_HEIGHT
-        )
+        sprite = get_spike_sprite()
+        # Center the spike horizontally in the tile cell, flush with the floor
+        tile_midbottom = (x + TILE_SIZE // 2, y + TILE_SIZE*1.75)
+        self.rect = sprite.get_rect(midbottom=tile_midbottom)
         self.color = SPIKE_COLOR
 
     def draw(self, surface, camera_x=0):
-        pygame.draw.rect(surface, self.color, self.rect.move(-camera_x, 0))
+        draw_rect = self.rect.move(-camera_x, 0)
+        surface.blit(get_spike_sprite(), draw_rect)
 
 class Bullet:
     def __init__(self, x, y, direction):
@@ -199,6 +277,20 @@ class BulletShooter(Platform):
                 bullet_x = self.rect.right
             bullets.append(Bullet(bullet_x, bullet_y, self.direction))
 
+    def draw_tiled_sprite(self, surface, draw_rect):
+        tile_img = get_cannon_tile(self.direction)
+        for offset_x in range(0, draw_rect.width, TILE_SIZE):
+            cell_center = (
+                draw_rect.x + offset_x + TILE_SIZE // 2,
+                draw_rect.y + TILE_SIZE // 2,
+            )
+            img_rect = tile_img.get_rect(center=cell_center)
+            surface.blit(tile_img, img_rect)
+
+    def draw(self, surface, camera_x=0):
+        if self.is_solid:
+            self.draw_tiled_sprite(surface, self.rect.move(-camera_x, 0))
+
 class Goal:
     def __init__(self, x, y, width=TILE_SIZE, height=TILE_SIZE):
         self.rect = pygame.Rect(x, y, width, height)
@@ -229,8 +321,7 @@ class NPC:
             pygame.draw.rect(surface, (255, 255, 255), self.rect, 2)
             prompt_box = pygame.Rect(self.rect.centerx - 5, self.rect.top - 14, 10, 10)
             pygame.draw.rect(surface, (255, 255, 255), prompt_box)
-
-    
+   
 class Player:
     def __init__(self, x, y):
         self.rect = pygame.Rect(x, y, PLAYER_SIZE, PLAYER_SIZE)
@@ -239,18 +330,19 @@ class Player:
         self.vel_y = 0
         self.on_ground = False
         self.standing_on = None
+        self.facing = 1  # 1 = right, -1 = left
 
     def update(self, platforms, screen_rect):
         keys = pygame.key.get_pressed()
         dx = 0
 
-        # Horizontal input
         if keys[pygame.K_a]:
             dx -= self.speed
+            self.facing = -1
         if keys[pygame.K_d]:
             dx += self.speed
+            self.facing = 1
 
-        # Jump input (only allowed when standing on a surface)
         if self.standing_on and self.standing_on.is_solid:
             dx += self.standing_on.dx
 
@@ -259,10 +351,9 @@ class Player:
             self.on_ground = False
             self.standing_on = None
 
-        # Apply gravity up to terminal fall speed
         self.vel_y = min(self.vel_y + GRAVITY, MAX_FALL_SPEED)
 
-        # Horizontal movement & collision
+        # 1. Horizontal movement & collision
         self.rect.x += dx
         for platform in platforms:
             if platform.is_solid and self.rect.colliderect(platform.rect):
@@ -271,19 +362,19 @@ class Player:
                 elif dx < 0:
                     self.rect.left = platform.rect.right
 
-        # Vertical movement & collision
+        # 2. Vertical movement & collision
         self.rect.y += self.vel_y
         for platform in platforms:
             if platform.is_solid and self.rect.colliderect(platform.rect):
-                if self.vel_y >0:
+                if self.vel_y > 0:
                     self.rect.bottom = platform.rect.top
                     self.vel_y = 0
                 elif self.vel_y < 0:
                     self.rect.top = platform.rect.bottom
                     self.vel_y = 0
 
-        # Keep player inside the window, reset fall speed if touching the floor
-        self.on_ground = self.rect.bottom >=screen_rect.bottom
+        # 3. Ground & trigger sensor
+        self.on_ground = False
         self.standing_on = None
         feet_sensor = pygame.Rect(self.rect.x, self.rect.bottom, self.rect.width, 1)
 
@@ -297,7 +388,15 @@ class Player:
         self.rect.clamp_ip(screen_rect)
 
     def draw(self, surface, camera_x=0):
-        pygame.draw.rect(surface, self.color, self.rect.move(-camera_x, 0))
+        draw_rect = self.rect.move(-camera_x, 0)
+        sprite = get_player_sprite(self.facing)
+
+        # Anchor feet to the bottom-center of the hitbox, then apply manual offsets
+        sprite_rect = sprite.get_rect(midbottom=draw_rect.midbottom)
+        sprite_rect.x += PLAYER_OFFSET_X
+        sprite_rect.y += PLAYER_OFFSET_Y
+
+        surface.blit(sprite, sprite_rect)
 
 def build_level(grid):
     platforms = []
