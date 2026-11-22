@@ -37,6 +37,7 @@ from settings import (
     PLAYER_SPRITE_SCALE,
     PLAYER_OFFSET_X,
     PLAYER_OFFSET_Y,
+    NPC_SPRITES,
     LEVELS,
 )
 
@@ -44,6 +45,7 @@ _platform_tile_cache = None
 _spike_sprite_cache = None
 _cannon_sprite_cache = {}
 _player_sprite_cache = {}
+_npc_sprite_cache = {}
 
 def get_platform_tile():
     global _platform_tile_cache
@@ -103,6 +105,32 @@ def get_player_sprite(facing):
         _player_sprite_cache[-1] = left_sprite
 
     return _player_sprite_cache[facing]
+
+def get_npc_sprite(minigame_id):
+    if minigame_id not in _npc_sprite_cache:
+        sprite_path = NPC_SPRITES.get(minigame_id)
+        if not sprite_path:
+            return None
+
+        img = pygame.image.load(sprite_path)
+        if pygame.display.get_surface():
+            img = img.convert_alpha()
+
+        # Trim empty transparent margins around the artwork
+        content_rect = img.get_bounding_rect()
+        if content_rect.width > 0 and content_rect.height > 0:
+            img = img.subsurface(content_rect)
+
+        # Scale proportionally based on PLAYER_SIZE
+        target_height = max(1, int(PLAYER_SIZE * PLAYER_SPRITE_SCALE))
+        aspect_ratio = img.get_width() / img.get_height()
+        target_width = max(1, int(target_height * aspect_ratio))
+
+        _npc_sprite_cache[minigame_id] = pygame.transform.scale(
+            img, (target_width, target_height)
+        )
+
+    return _npc_sprite_cache[minigame_id]
 
 class Platform:
     def __init__(self, x, y, width=TILE_SIZE, height=TILE_SIZE, color=PLATFORM_COLOR):
@@ -302,7 +330,6 @@ class Goal:
 class NPC:
     def __init__(self, x, y, minigame_id):
         self.rect = pygame.Rect(x, y, PLAYER_SIZE, PLAYER_SIZE)
-        # Slightly larger invisible box so you don't have to pixel-perfect overlap
         self.interact_rect = self.rect.inflate(INTERACT_PADDING, INTERACT_PADDING)
         self.color = NPC_COLOR
         self.minigame_id = minigame_id
@@ -312,15 +339,26 @@ class NPC:
     def update(self, player_rect):
         self.player_nearby = self.interact_rect.colliderect(player_rect)
 
-    def draw(self, surface):
-        color = NPC_COMPLETED_COLOR if self.completed else self.color
-        pygame.draw.rect(surface, color, self.rect)
+    def draw(self, surface, camera_x=0):
+        draw_rect = self.rect.move(-camera_x, 0)
+        sprite = get_npc_sprite(self.minigame_id)
 
-        # Show a visual cue when the player is close enough to press 'T'
+        if sprite:
+            sprite_rect = sprite.get_rect(midbottom=draw_rect.midbottom)
+            surface.blit(sprite, sprite_rect)
+        else:
+            # Fallback rectangle if an NPC doesn't have an entry in NPC_SPRITES yet
+            color = NPC_COMPLETED_COLOR if self.completed else self.color
+            pygame.draw.rect(surface, color, draw_rect)
+            sprite_rect = draw_rect
+
+        # Show prompt box above the sprite's head when nearby (turns green if already beaten)
         if self.player_nearby:
-            pygame.draw.rect(surface, (255, 255, 255), self.rect, 2)
-            prompt_box = pygame.Rect(self.rect.centerx - 5, self.rect.top - 14, 10, 10)
-            pygame.draw.rect(surface, (255, 255, 255), prompt_box)
+            prompt_box = pygame.Rect(
+                sprite_rect.centerx - 5, sprite_rect.top - 14, 10, 10
+            )
+            prompt_color = (0, 255, 0) if self.completed else (255, 255, 255)
+            pygame.draw.rect(surface, prompt_color, prompt_box)
    
 class Player:
     def __init__(self, x, y):
@@ -440,6 +478,8 @@ def build_level(grid):
                 npcs.append(NPC(x, y + 8, minigame_id = "minesweeper"))
             elif cell == "3":
                 npcs.append(NPC(x, y + 8, minigame_id = "teapot"))
+            elif cell == "3":
+                npcs.append(NPC(x, y + 8, minigame_id = "queen"))
 
     return platforms, spikes, shooters, bullets, player, goal, npcs
 
