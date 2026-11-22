@@ -27,8 +27,17 @@ BULLET_HEIGHT = 8
 BULLET_SPEED = 6
 SHOOT_INTERVAL = 120
 
+# Sprites
+PLATFORM_SPRITE = "sprites/Platform.png"
+SPIKE_SPRITE = "sprites/Spike.png"
+CANNON_SPRITE = "sprites/Cannon.png"
+PLAYER_SPRITE = "sprites/Alice2.png"
+PLAYER_SPRITE_SCALE = 1.25
+PLAYER_OFFSET_X = 0
+PLAYER_OFFSET_Y = 0
+
 # Colors (R, G, B)
-BG_COLOR = (0, 0, 0)
+BG_COLOR = (127, 127, 127)
 PLATFORM_COLOR = (150, 150, 150)
 MOVING_COLOR = (70, 130, 230)
 CRUMBLE_COLOR = (210, 120, 60)
@@ -60,7 +69,7 @@ LEVELS = [
     # Level 1
     [
         "....................",
-        "....................",
+        ".#..................",
         ".R...............P..",
         "...............#####",
         "..................L.",
