@@ -438,6 +438,8 @@ def build_level(grid):
                 npcs.append(NPC(x, y + 8, minigame_id = "speedrun"))
             elif cell == "2":
                 npcs.append(NPC(x, y + 8, minigame_id = "minesweeper"))
+            elif cell == "3":
+                npcs.append(NPC(x, y + 8, minigame_id = "teapot"))
 
     return platforms, spikes, shooters, bullets, player, goal, npcs
 
