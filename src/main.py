@@ -1,6 +1,6 @@
 import pygame
 import sys
-from settings import WIDTH, HEIGHT, FPS, BG_COLOR, WINNING_BG_COLOR, WINNING_TEXT, WINNING_TEXT_COLOR, LEVELS, WINNING_TEXT_TRUE
+from settings import WIDTH, HEIGHT, FPS, BG_COLOR, WINNING_BG_COLOR, WINNING_TEXT, WINNING_TEXT_COLOR, LEVELS, WINNING_TEXT_TRUE, NPC_CHARS
 from objects import load_level
 from minigames import start_minigame
 
@@ -13,6 +13,19 @@ def draw_multiline_text(surface, text, pos, font, color):
         line_surface = font.render(line, True, color)
         surface.blit(line_surface, (x - len(line), y))
         y += line_height  # Move down for the next line
+
+total_npcs = sum(
+    cell in NPC_CHARS
+    for level in LEVELS
+    for row in level
+    for cell in row
+)
+
+
+def sync_npc_states(npcs, level_index, completed_npcs):
+    for idx, npc in enumerate(npcs):
+        if (level_index, idx) in completed_npcs:
+            npc.completed = True
 
 # python src/main.py
 # python -m venv downTheRabbitHole
@@ -27,9 +40,10 @@ screen_rect = screen.get_rect()
 clock = pygame.time.Clock()
 
 current_level = 0
+completed_npcs = set()
 platforms, spikes, shooters, bullets, player, goal, npcs = load_level(current_level)
 gameOver = False
-miniCount = 0
+sync_npc_states(npcs, current_level, completed_npcs)
 
 running = True
 while running:
@@ -41,12 +55,12 @@ while running:
 
         # Trigger minigame when pressing 'T' near an NPC
         if event.type == pygame.KEYDOWN and event.key == pygame.K_t:
-            for npc in npcs:
+            for idx, npc in enumerate(npcs):
                 if npc.player_nearby:
                     won = start_minigame(screen, clock, npc.minigame_id)
                     if won:
                         npc.completed = True
-                        miniCount += 1
+                        completed_npcs.add((current_level, idx))
                     break
 
     for platform in platforms:
@@ -74,6 +88,7 @@ while running:
 
     if died:
         platforms, spikes, shooters, bullets, player, goal, npcs = load_level(current_level)
+        sync_npc_states(npcs, current_level, completed_npcs)
         continue
 
     # Check if player reached the goal
@@ -84,7 +99,7 @@ while running:
         else:
             screen.fill(WINNING_BG_COLOR)
             gameOver = True
-            if miniCount < len(npcs) + 1:
+            if len(completed_npcs) < len(NPC_CHARS):
                 draw_multiline_text(screen, WINNING_TEXT, (2 * len(WINNING_TEXT), HEIGHT//2), FONT, WINNING_TEXT_COLOR)
             else:
                 draw_multiline_text(screen, WINNING_TEXT_TRUE, (2 * len(WINNING_TEXT), HEIGHT//2), FONT, WINNING_TEXT_COLOR)
