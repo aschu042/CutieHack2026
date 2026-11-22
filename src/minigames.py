@@ -12,12 +12,50 @@ from settings import (
     GOAL_COLOR,
     SPEEDRUN_TIME,
     SPEEDRUN_LEVEL,
+    TIME_SPRITE,
+    HAT_SPRITE,
 )
 from objects import build_level
 
 
 pygame.init()
 
+_speedrun_splash_cache = None
+_hat_splash_cache = None
+
+def show_speedrun_splash(screen, clock, duration_seconds=1.0):
+    global _speedrun_splash_cache
+    if _speedrun_splash_cache is None:
+        img = pygame.image.load(TIME_SPRITE).convert()
+        _speedrun_splash_cache = pygame.transform.scale(img, (WIDTH, HEIGHT))
+
+    frames = int(FPS * duration_seconds)
+    for _ in range(frames):
+        clock.tick(FPS)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        screen.blit(_speedrun_splash_cache, (0, 0))
+        pygame.display.flip()
+
+def show_hat_splash(screen, clock, duration_seconds=1.0):
+    global _hat_splash_cache
+    if _hat_splash_cache is None:
+        img = pygame.image.load(HAT_SPRITE).convert()
+        _hat_splash_cache = pygame.transform.scale(img, screen.get_size())
+
+    frames = int(FPS * duration_seconds)
+    for _ in range(frames):
+        clock.tick(FPS)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+
+        screen.blit(_hat_splash_cache, (0, 0))
+        pygame.display.flip()
 
 def start_minigame(screen, clock, minigame_id):
     minigames = {
@@ -42,6 +80,8 @@ def run_speedrun(screen, clock):
 
     start_x = player.rect.x
     time_left = SPEEDRUN_TIME
+
+    show_speedrun_splash(screen, clock, duration_seconds=1.0)
 
     while True:
         clock.tick(FPS)
@@ -75,6 +115,7 @@ def run_speedrun(screen, clock):
         )
         if hit_hazard:
             platforms, spikes, shooters, bullets, player, goal, npcs = build_level(SPEEDRUN_LEVEL)
+            show_speedrun_splash(screen, clock, duration_seconds=1.0)
 
         time_left -= 1
         if time_left <= 0:
@@ -243,6 +284,10 @@ def run_teapot(screen, clock):
     screen = pygame.display.set_mode((width, height))
     font = pygame.font.SysFont(None, 40)
 
+    show_hat_splash(screen, clock, duration_seconds=0.2)
+
+    next_popup_timer = random.randint(60, 360)
+
     teapot = pygame.image.load("sprites/Teapot.png").convert_alpha()
     teapot = pygame.transform.scale(teapot, (1300, 600))
     teapot_rect = teapot.get_rect(center=(width // 2 - 30, 250))
@@ -321,6 +366,11 @@ def run_teapot(screen, clock):
                         print(f"Wrong! Expected Cup {choices[0]}, got Cup {clicked_cup}")
                         status_text = "Wrong cup!"
                         result = False
+
+        next_popup_timer -= 1
+        if next_popup_timer <= 0:
+            show_hat_splash(screen, clock, duration_seconds=0.2)
+            next_popup_timer = random.randint(60, 360)
 
         # 2. Update drops
         if spawn_times and current_time >= spawn_times[0]:

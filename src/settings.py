@@ -41,6 +41,8 @@ NPC_SPRITES = {
     "teapot": "sprites/MadHatter.png",
     "queen": "sprites/Heart.png",
 }
+TIME_SPRITE = "sprites/Time.jpg"
+HAT_SPRITE = "sprites/Hat.png"
 
 # Colors (R, G, B)
 BG_COLOR = (127, 127, 127)
